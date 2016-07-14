@@ -1,60 +1,73 @@
+# This program is used for all the data mining purposes. 
+# It uses the Tweepy api for python to retrieve tweets and store it on a local database
+# Although data mining can be implemented on R as well, Python allows better integration with web apps
+# Author: Priya Bhatnagar
+
 #imports
-import tweepy
-import pymongo
-import numpy as np
-#import pandas as pd
-import matplotlib as plt
-#import ipwidgets as wgt
+import tweepy #twitter api for python
+import pymongo #save tweets on a mongo database
+import xlsxwriter #write tweets to excel sheet 
+import time
+import datetime
 from datetime import datetime
 
-#listener
+#this class inherits from tweepy.StreamListener and overrides the constructor and on_status method
 class MyStreamListener(tweepy.StreamListener):
 
-	counter = 0
-
-	def __init__(self, max_tweets = 1000, *args, **kwargs):
-		self.max_tweets = max_tweets
+	def __init__(self, max_tweets = None, data = [], *args, **kwargs):
 		self.counter = 0
-		super().__init__(*args, **kwargs)
+		self.max_tweets = max_tweets
+		self.data = data
 
-		def on_connect(self):
-			self.counter = 0
-			self.start_time = datetime.now()
+		super().__init__(*args, **kwargs)
 
 	def on_status(self, status):
 		self.counter += 1
+		if self.counter <= self.max_tweets:
+			self.data.append(status)
+			return True
+		else:
+			return False
 
-		#store tweet to mongoDB
-		col.insert_one(status._json)
-
+#set keys
 consumer_key = "LIBzsGBt3vlY1mUbpM8vJjbq0" # To get a key go to apps.twitter.com 
 consumer_secret = "HF1IKSattNKhHH69fvqfD2ShCnGISlHnkqPS8dZuok6G8aq16Y"
-
 access_token = 	"745440108891934720-U0WwTMrQ5kZl6B4GqByUPXrP66myX5t"
 access_token_secret = "OOheJ0XzhfAwfQbvKiaunB0tbwBDDEQ6BpuwitOQp6wUZ"
 
+#set configuration
 auth = tweepy.OAuthHandler(consumer_key = consumer_key, consumer_secret = consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
-
 api = tweepy.API(auth)
 
-#collection
-col = pymongo.MongoClient()["tweets"]["sentimentAnalysis"] #db name and collection name
-print(col.count())
+#get current time
+time = time.time()
+timestamp = datetime.fromtimestamp(time).strftime('%Y_%m_%d_%H_%M_%S')
+timestamp = str(timestamp)
+path = 'C:\\Users\\priyabhatnagar\\TCS_Data_Mining_Demo\\data\\' + timestamp + '.xlsx'
 
-myStreamListener = MyStreamListener(max_tweets=1000)
-myStream = tweepy.Stream(api.auth, listener = myStreamListener)
+#create an excel sheet
+workbook = xlsxwriter.Workbook(path)
+worksheet = workbook.add_worksheet()
 
-#keywords for which we will find tweets
-keywords = ["iphone6", "iphone7"]
+#stream
+#create a stream by creating an instance of the listener and passing it as a parameter
+myTweetData = []
+streamListener = MyStreamListener(max_tweets = 100,  data = myTweetData)
+stream = tweepy.Stream(auth = auth, listener = streamListener)
 
-#starting a filter
+#start the stream 
+stream.filter(track = ['Juno'], languages=["en"])
 
-for error_counter in range(20):
-	try: 
-		myStream.filter(track = keywords)
-		print("Tweets collected: %s" % myStream.listener.counter)
-		print("Total tweets in collection: %s" %col.count())
-		break
-	except:
-		print("ERROR # %s" % (error_counter + 1))
+row = 0
+col = 0
+
+worksheet.write(row, col, "TWEET")
+row += 1
+for tweet in myTweetData:
+	worksheet.write(row, col, tweet.text)
+	worksheer.write
+	row += 1
+
+
+workbook.close()
