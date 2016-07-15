@@ -1,6 +1,5 @@
 # This program is used for all the data mining purposes. 
 # It uses the Tweepy api for python to retrieve tweets and store it on a local database
-# Although data mining can be implemented on R as well, Python allows better integration with web apps
 # Author: Priya Bhatnagar
 
 #imports
@@ -11,6 +10,9 @@ import xlsxwriter #write tweets to excel sheet
 import time
 import datetime
 from datetime import datetime
+
+#connect to mongoDB
+collection = pymongo.MongoClient()["tweets"]["sentimentAnalysis"]
 
 #this class inherits from tweepy.StreamListener and overrides the constructor and on_status method
 class MyStreamListener(tweepy.StreamListener):
@@ -31,6 +33,7 @@ class MyStreamListener(tweepy.StreamListener):
 			print("-----" + str(self.counter) + "------")
 			print((status.text).encode('utf-8'))
 			self.data.append(status)
+			collection.insert_one(status._json) #storing tweet on db with json format
 			return True
 		else:
 			return False
