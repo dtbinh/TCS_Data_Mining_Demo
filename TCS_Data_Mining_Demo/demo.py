@@ -7,6 +7,7 @@
 import tweepy #twitter api for python
 import pymongo #save tweets on a mongo database
 import xlsxwriter #write tweets to excel sheet 
+#import nltk.sentiment as s
 import time
 import datetime
 from datetime import datetime
@@ -21,9 +22,14 @@ class MyStreamListener(tweepy.StreamListener):
 
 		super().__init__(*args, **kwargs)
 
+	def on_error(self ,status):
+		print(status)
+
 	def on_status(self, status):
 		self.counter += 1
 		if self.counter <= self.max_tweets:
+			print("-----" + str(self.counter) + "------")
+			print((status.text).encode('utf-8'))
 			self.data.append(status)
 			return True
 		else:
@@ -53,11 +59,11 @@ worksheet = workbook.add_worksheet()
 #stream
 #create a stream by creating an instance of the listener and passing it as a parameter
 myTweetData = []
-streamListener = MyStreamListener(max_tweets = 100,  data = myTweetData)
+streamListener = MyStreamListener(max_tweets = 1000000,  data = myTweetData)
 stream = tweepy.Stream(auth = auth, listener = streamListener)
 
 #start the stream 
-stream.filter(track = ['Juno'], languages=["en"])
+stream.filter(track = ['president'], languages=["en"])
 
 row = 0
 col = 0
@@ -66,7 +72,6 @@ worksheet.write(row, col, "TWEET")
 row += 1
 for tweet in myTweetData:
 	worksheet.write(row, col, tweet.text)
-	worksheer.write
 	row += 1
 
 
